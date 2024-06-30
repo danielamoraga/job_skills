@@ -1,5 +1,8 @@
-raw_skills = LOAD 'hdfs://cm:9000/uhadoop2024/projects/skills/job_skills.csv' USING PigStorage(',') AS (url:chararray, skills:tuple);
+raw_skills = LOAD 'hdfs://cm:9000/uhadoop2024/projects/skills/job_skills.csv' USING PigStorage(';') AS (url:chararray, skills:tuple);
 DUMP raw_skills;
+
+raw_postings = LOAD 'hdfs://cm:9000/uhadoop2024/projects/skills/linkedin_job_postings.csv' USING PigStorage(',') AS (url:chararray, last_processed_time:datetime, got_summary:boolean, got_ner:boolean, is_being_worked:boolean, job_title:chararray, company:chararray, job_location:chararray, first_seen:datetime, search_city:chararray);
+DUMP raw_postings;
 
 -- Separar las habilidades en una lista
 skills_listed = FOREACH raw_skills GENERATE FLATTEN(STRSPLIT(skills, ',')) AS skill;
