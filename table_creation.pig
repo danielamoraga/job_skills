@@ -21,4 +21,4 @@ STORE skills_sorted INTO 'skills_count_output' USING PigStorage(',');
 -- Mostrar los resultados
 DUMP skills_sorted;
 
-pig creacion_bases.pig
+pig table_creation.pig
