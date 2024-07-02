@@ -21,7 +21,7 @@ skills_count = FOREACH skills_grouped GENERATE group AS skill, COUNT(skills_trim
 skills_sorted = ORDER skills_count BY count DESC;
 
 -- Guardar los resultados en un archivo
-STORE skills_sorted INTO '/uhadoop2024/projects/skills/' USING PigStorage(',');
+STORE skills_sorted INTO '/uhadoop2024/projects/skills/sorted_skills/' USING PigStorage(',');
 
 -- Mostrar los resultados
 head_sorted= LIMIT skills_sorted 10;
