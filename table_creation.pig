@@ -23,7 +23,7 @@ skills_filtered = FILTER skills_trimmed BY skill_trimmed IS NOT NULL AND skill_t
 raw_postings = LOAD 'hdfs://cm:9000/uhadoop2024/projects/skills/posting_sample.csv' USING PigStorage(';') AS (url:chararray, last_processed_time:datetime, got_summary:boolean, got_ner:boolean, is_being_worked:boolean, job_title:chararray, company:chararray, job_location:chararray, first_seen:datetime, search_city:chararray, search_country:chararray, search_position:chararray, job_level:chararray, job_type:chararray);
 
 -- Seleccionar las columnas de interés
-selected= FOREACH raw_postings GENERATE url,job_title,company,job_location,search_position,search_country;
+selected = FOREACH raw_postings GENERATE url,job_title,company,job_location,search_position,search_country;
 -- head_postings = LIMIT selected 10;
 -- DUMP head_postings;
 
@@ -62,10 +62,12 @@ joined_skills = JOIN filtered_skills BY job_title, total_skills BY job_title_que
 -- Calcular el porcentaje de cada skill
 skill_percentages = FOREACH joined_skills GENERATE filtered_skills::job_title AS job_title, 
                                                    filtered_skills::skill_trimmed AS skill_trimmed, 
-                                                   (filtered_skills::skill_count / total_skills::total_skill_count) * 100 AS skill_percentage;
+                                                   (filtered_skills::skill_count / total_skills::total_skill_count) * 100.0 AS skill_percentage;
+
+ordered_percentages = ORDER skill_percentages BY skill_percentage DESC;
 
 -- Hacer un head de las 10 primeras habilidades más frecuentes
-head_filtered_skills = LIMIT skill_percentages 10;
+head_filtered_skills = LIMIT ordered_percentages 10;
 
 -- Mostrar las 10 habilidades más frecuentes
 DUMP head_filtered_skills;
