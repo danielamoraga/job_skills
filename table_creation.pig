@@ -3,18 +3,18 @@
 
 -- Cargar el data set de skills relacionadas al url del trabajo
 raw_skills = LOAD 'hdfs://cm:9000/uhadoop2024/projects/skills/job_sample.csv' USING PigStorage(';') AS (url:chararray, skills:chararray);
-head_skills= LIMIT raw_skills 10;
-DUMP head_skills;
+-- head_skills= LIMIT raw_skills 10;
+-- DUMP head_skills;
 
 -- Separar las skills
 skills_listed = FOREACH raw_skills GENERATE url, FLATTEN(TOKENIZE(skills, ',')) AS skill;
-head_skills_listed = LIMIT skills_listed 10;
-DUMP head_skills_listed;
+-- head_skills_listed = LIMIT skills_listed 10;
+-- DUMP head_skills_listed;
 
 -- Eliminar espacios en blanco alrededor de las habilidades y convertirlas a minúsculas
-skills_trimmed = FOREACH skills_listed GENERATE url, LOWER(TRIM(skill)) AS skill_trimmed;
-head_trimmed = LIMIT skills_trimmed 10;
-DUMP head_trimmed;
+skills_trimmed = FOREACH skills_listed GENERATE url, TRIM(skill) AS skill_trimmed;
+-- head_trimmed = LIMIT skills_trimmed 10;
+-- DUMP head_trimmed;
 
 -- Filtrar habilidades vacías o nulas
 skills_filtered = FILTER skills_trimmed BY skill_trimmed IS NOT NULL AND skill_trimmed != '';
@@ -24,13 +24,13 @@ raw_postings = LOAD 'hdfs://cm:9000/uhadoop2024/projects/skills/posting_sample.c
 
 -- Seleccionar las columnas de interés
 selected= FOREACH raw_postings GENERATE url,job_title,company,job_location,search_position,search_country;
-head_postings = LIMIT selected 10;
-DUMP head_postings;
+-- head_postings = LIMIT selected 10;
+-- DUMP head_postings;
 
 -- Juntar ambas tablas usando el url como columna común
 joined_data = JOIN skills_filtered BY url, selected BY url;
-head_join = LIMIT joined_data 10;
-DUMP head_join;
+-- head_join = LIMIT joined_data 10;
+-- DUMP head_join;
 
 -- Generar una relación que contenga job_title y skills
 job_title_skills = FOREACH joined_data GENERATE selected::job_title, skills_filtered::skill_trimmed;
@@ -39,19 +39,19 @@ job_title_skills = FOREACH joined_data GENERATE selected::job_title, skills_filt
 grouped_by_title_skill = GROUP job_title_skills BY job_title;
 
 -- Aplanar habilidades por título ded trabajo
-flattened_skills = FOREACH grouped_by_title_skill  GENERATE GROUP, FLATTEN(job_title_skills);
+flattened_skills = FOREACH grouped_by_title_skill  GENERATE group, FLATTEN(job_title_skills);
 
 -- Agrupar por título de trabajo y habilidad específica
-grouped_skills = GROUP flattened_skills BY (GROUP, job_title_skills::skills_filtered::skill_trimmed);
+grouped_skills = GROUP flattened_skills BY (group, job_title_skills::skills_filtered::skill_trimmed);
 
 -- Contar las habilidades
-skill_counts = FOREACH grouped_skills GENERATE FLATTEN(GROUP) AS (job_title, skill_trimmed), COUNT(flattened_skills) AS skill_count;
+skill_counts = FOREACH grouped_skills GENERATE FLATTEN(group) AS (job_title, skill_trimmed), COUNT(flattened_skills) AS skill_count;
 
 -- Ordenar habilidades por frecuencia en orden descenciente
-order_skill_counts= ORDER skill_counts BY skill_count DESC;
+order_skill_counts= Order skill_counts by skill_count DESC;
 
 -- Filtrar por el trabajo que se desea buscar
-filtered_skills = FILTER ordered_skill_counts BY job_title == '$job_title_query';
+filtered_skills = FILTER order_skill_counts BY job_title == '$job_title_query';
 
 -- Cantidad total de skills dado el trabajo pedido
 total_skills = FOREACH (GROUP filtered_skills ALL) GENERATE SUM(filtered_skills.skill_count) AS total_skill_count;
