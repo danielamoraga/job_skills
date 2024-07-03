@@ -37,9 +37,9 @@ skill_counts = FOREACH grouped_skills GENERATE FLATTEN(group) AS (job_title, ski
 
 order_skill_counts= Order skill_counts by skill_count DESC;
 
-########
-#grouped_by_title = GROUP skill_counts BY job_title;
+----
+--grouped_by_title = GROUP skill_counts BY job_title;
 
-#ordered_skills= FOREACH grouped_by_title {
-    sorted_skills = ORDER skill_counts BY skill_count DESC;
-    GENERATE group AS job_title, sorted_skills;
+--ordered_skills= FOREACH grouped_by_title {
+--    sorted_skills = ORDER skill_counts BY skill_count DESC;
+--    GENERATE group AS job_title, sorted_skills;
