@@ -1,3 +1,6 @@
+-- Definir parámetro de entrada del título del trabajo a buscar
+%default job_title_query 'Account Executive'
+
 -- Cargar el data set de skills relacionadas al url del trabajo
 raw_skills = LOAD 'hdfs://cm:9000/uhadoop2024/projects/skills/job_sample.csv' USING PigStorage(';') AS (url:chararray, skills:chararray);
 head_skills= LIMIT raw_skills 10;
@@ -48,10 +51,21 @@ skill_counts = FOREACH grouped_skills GENERATE FLATTEN(GROUP) AS (job_title, ski
 order_skill_counts= ORDER skill_counts BY skill_count DESC;
 
 -- Filtrar por el trabajo que se desea buscar
-filtered_skills = FILTER ordered_skill_counts BY job_title == 'Chef';
+filtered_skills = FILTER ordered_skill_counts BY job_title == '$job_title_query';
+
+-- Cantidad total de skills dado el trabajo pedido
+total_skills = FOREACH (GROUP filtered_skills ALL) GENERATE SUM(filtered_skills.skill_count) AS total_skill_count;
+
+-- Unir filtered_skills con total_skills para calcular el porcentaje
+joined_skills = JOIN filtered_skills BY job_title, total_skills BY job_title_query;
+
+-- Calcular el porcentaje de cada skill
+skill_percentages = FOREACH joined_skills GENERATE filtered_skills::job_title AS job_title, 
+                                                   filtered_skills::skill_trimmed AS skill_trimmed, 
+                                                   (filtered_skills::skill_count / total_skills::total_skill_count) * 100 AS skill_percentage;
 
 -- Hacer un head de las 10 primeras habilidades más frecuentes
-head_filtered_skills = LIMIT filtered_skills 10;
+head_filtered_skills = LIMIT skill_percentages 10;
 
 -- Mostrar las 10 habilidades más frecuentes
 DUMP head_filtered_skills;
