@@ -27,6 +27,11 @@ selected = FOREACH raw_postings GENERATE url, LOWER(job_title) AS job_title_lowe
 -- head_postings = LIMIT selected 10;
 -- DUMP head_postings;
 
+only_job= FOREACH selected GENERATE job_title_lower;
+grouped_jobs = GROUP only_job BY job_title_lower;
+-- Contar el número total de trabajos por título de trabajo
+total_jobs_by_title = FOREACH grouped_jobs GENERATE group AS job_title_lower, COUNT(only_job) AS total_jobs;
+
 -- Juntar ambas tablas usando el url como columna común
 joined_data = JOIN skills_filtered BY url, selected BY url;
 -- head_join = LIMIT joined_data 10;
@@ -34,9 +39,6 @@ joined_data = JOIN skills_filtered BY url, selected BY url;
 
 -- Generar una relación que contenga job_title y skills
 job_title_skills = FOREACH joined_data GENERATE selected::job_title_lower, skills_filtered::skill_trimmed;
-
--- Contar el número total de trabajos por título de trabajo
-total_jobs_by_title = FOREACH (GROUP job_title_skills BY job_title_lower) GENERATE group AS job_title, COUNT(job_title_skills) AS total_jobs;
 
 -- Agrupar por job_title y skill para contar la frecuencia de cada habilidad
 grouped_by_title_skill = GROUP job_title_skills BY job_title_lower;
