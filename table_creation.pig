@@ -2,7 +2,7 @@
 %default job_title_query 'Account Executive'
 
 -- Cargar el data set de skills relacionadas al url del trabajo
-raw_skills = LOAD 'hdfs://cm:9000/uhadoop2024/projects/skills/job_sample.csv' USING PigStorage(';') AS (url:chararray, skills:chararray);
+raw_skills = LOAD 'hdfs://cm:9000/uhadoop2024/projects/skills/job_skills.csv' USING PigStorage(';') AS (url:chararray, skills:chararray);
 -- head_skills= LIMIT raw_skills 10;
 -- DUMP head_skills;
 
@@ -20,7 +20,7 @@ skills_trimmed = FOREACH skills_listed GENERATE url, TRIM(skill) AS skill_trimme
 skills_filtered = FILTER skills_trimmed BY skill_trimmed IS NOT NULL AND skill_trimmed != '';
 
 -- Cargar el data set de trabajos asociados a su url
-raw_postings = LOAD 'hdfs://cm:9000/uhadoop2024/projects/skills/posting_sample.csv' USING PigStorage(';') AS (url:chararray, last_processed_time:datetime, got_summary:boolean, got_ner:boolean, is_being_worked:boolean, job_title:chararray, company:chararray, job_location:chararray, first_seen:datetime, search_city:chararray, search_country:chararray, search_position:chararray, job_level:chararray, job_type:chararray);
+raw_postings = LOAD 'hdfs://cm:9000/uhadoop2024/projects/skills/linkedin_job_postings.csv' USING PigStorage(';') AS (url:chararray, last_processed_time:datetime, got_summary:boolean, got_ner:boolean, is_being_worked:boolean, job_title:chararray, company:chararray, job_location:chararray, first_seen:datetime, search_city:chararray, search_country:chararray, search_position:chararray, job_level:chararray, job_type:chararray);
 
 -- Seleccionar las columnas de interés
 selected = FOREACH raw_postings GENERATE url,job_title,company,job_location,search_position,search_country;
