@@ -4,7 +4,6 @@ This guide explains how to run two Pig scripts sequentially. The first script pr
 
 ## Prerequisites
 
-- Apache Pig installed and configured
 - Input data file located at `hdfs://cm:9000/uhadoop2024/projects/skills/`
 
 ## Scripts & Execution Steps
