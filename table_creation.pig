@@ -1,5 +1,5 @@
 -- Definir parámetro de entrada del título del trabajo a buscar
-%default job_title_query 'Account Executive'
+%default job_title_query 'account executive'
 
 -- Cargar el data set de skills relacionadas al url del trabajo
 raw_skills = LOAD 'hdfs://cm:9000/uhadoop2024/projects/skills/job_skills.csv' USING PigStorage(';') AS (url:chararray, skills:chararray);
@@ -12,7 +12,7 @@ skills_listed = FOREACH raw_skills GENERATE url, FLATTEN(TOKENIZE(skills, ',')) 
 -- DUMP head_skills_listed;
 
 -- Eliminar espacios en blanco alrededor de las habilidades y convertirlas a minúsculas
-skills_trimmed = FOREACH skills_listed GENERATE url, TRIM(skill) AS skill_trimmed;
+skills_trimmed = FOREACH skills_listed GENERATE url, LOWER(TRIM(skill)) AS skill_trimmed;
 -- head_trimmed = LIMIT skills_trimmed 10;
 -- DUMP head_trimmed;
 
@@ -23,7 +23,7 @@ skills_filtered = FILTER skills_trimmed BY skill_trimmed IS NOT NULL AND skill_t
 raw_postings = LOAD 'hdfs://cm:9000/uhadoop2024/projects/skills/linkedin_job_postings.csv' USING PigStorage(';') AS (url:chararray, last_processed_time:datetime, got_summary:boolean, got_ner:boolean, is_being_worked:boolean, job_title:chararray, company:chararray, job_location:chararray, first_seen:datetime, search_city:chararray, search_country:chararray, search_position:chararray, job_level:chararray, job_type:chararray);
 
 -- Seleccionar las columnas de interés
-selected = FOREACH raw_postings GENERATE url,job_title,company,job_location,search_position,search_country;
+selected = FOREACH raw_postings GENERATE url, LOWER(job_title) AS job_title_lower,company,job_location,search_position,search_country;
 -- head_postings = LIMIT selected 10;
 -- DUMP head_postings;
 
@@ -33,10 +33,10 @@ joined_data = JOIN skills_filtered BY url, selected BY url;
 -- DUMP head_join;
 
 -- Generar una relación que contenga job_title y skills
-job_title_skills = FOREACH joined_data GENERATE selected::job_title, skills_filtered::skill_trimmed;
+job_title_skills = FOREACH joined_data GENERATE selected::job_title_lower, skills_filtered::skill_trimmed;
 
 -- Agrupar por job_title y skill para contar la frecuencia de cada habilidad
-grouped_by_title_skill = GROUP job_title_skills BY job_title;
+grouped_by_title_skill = GROUP job_title_skills BY job_title_lower;
 
 -- Aplanar habilidades por título ded trabajo
 flattened_skills = FOREACH grouped_by_title_skill  GENERATE group, FLATTEN(job_title_skills);
@@ -45,22 +45,22 @@ flattened_skills = FOREACH grouped_by_title_skill  GENERATE group, FLATTEN(job_t
 grouped_skills = GROUP flattened_skills BY (group, job_title_skills::skills_filtered::skill_trimmed);
 
 -- Contar las habilidades
-skill_counts = FOREACH grouped_skills GENERATE FLATTEN(group) AS (job_title, skill_trimmed), COUNT(flattened_skills) AS skill_count;
+skill_counts = FOREACH grouped_skills GENERATE FLATTEN(group) AS (job_title_lower, skill_trimmed), COUNT(flattened_skills) AS skill_count;
 
 -- Ordenar habilidades por frecuencia en orden descenciente
 order_skill_counts= Order skill_counts by skill_count DESC;
 
 -- Filtrar por el trabajo que se desea buscar
-filtered_skills = FILTER order_skill_counts BY job_title == '$job_title_query';
+filtered_skills = FILTER order_skill_counts BY job_title_lower == '$job_title_query';
 
 -- Cantidad total de skills dado el trabajo pedido
 total_skills = FOREACH (GROUP filtered_skills ALL) GENERATE SUM(filtered_skills.skill_count) AS total_skill_count;
 
 -- Unir filtered_skills con total_skills para calcular el porcentaje
-joined_skills = JOIN filtered_skills BY job_title, total_skills BY job_title_query;
+joined_skills = JOIN filtered_skills BY job_title_lower, total_skills BY job_title_query;
 
 -- Calcular el porcentaje de cada skill
-skill_percentages = FOREACH joined_skills GENERATE filtered_skills::job_title AS job_title, 
+skill_percentages = FOREACH joined_skills GENERATE filtered_skills::job_title_lower AS job_title_lower, 
                                                    filtered_skills::skill_trimmed AS skill_trimmed, 
                                                    (filtered_skills::skill_count / total_skills::total_skill_count) * 100.0 AS skill_percentage;
 
