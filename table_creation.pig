@@ -51,7 +51,7 @@ skill_counts = FOREACH grouped_skills GENERATE FLATTEN(group) AS (job_title_lowe
 order_skill_counts = ORDER skill_counts by skill_count DESC;
 
 -- Juntar el número total de trabajos con el número de trabajos que requieren cada habilidad
-joined_totals = JOIN skill_counts BY job_title, total_jobs_by_title BY job_title_lower;
+joined_totals = JOIN skill_counts BY job_title_lower, total_jobs_by_title BY job_title_lower;
 
 -- Calcular el porcentaje de trabajos que requieren cada habilidad
 percentage_skills = FOREACH joined_totals GENERATE skill_counts::job_title_lower AS job_title_lower, skill_counts::skill AS skill, (skill_counts::skill_count * 100.0 / total_jobs_by_title::total_jobs) AS skill_percentage;
