@@ -48,26 +48,15 @@ grouped_skills = GROUP flattened_skills BY (group, job_title_skills::skills_filt
 skill_counts = FOREACH grouped_skills GENERATE FLATTEN(group) AS (job_title_lower, skill_trimmed), COUNT(flattened_skills) AS skill_count;
 
 -- Ordenar habilidades por frecuencia en orden descenciente
-order_skill_counts= Order skill_counts by skill_count DESC;
+order_skill_counts = ORDER skill_counts by skill_count DESC;
 
--- Filtrar por el trabajo que se desea buscar
-filtered_skills = FILTER order_skill_counts BY job_title_lower == '$job_title_query';
+-- Juntar el número total de trabajos con el número de trabajos que requieren cada habilidad
+joined_totals = JOIN skill_counts BY job_title, total_jobs_by_title BY job_title;
 
--- Cantidad total de skills dado el trabajo pedido
-total_skills = FOREACH (GROUP filtered_skills ALL) GENERATE SUM(filtered_skills.skill_count) AS total_skill_count;
+-- Calcular el porcentaje de trabajos que requieren cada habilidad
+percentage_skills = FOREACH joined_totals GENERATE skill_counts::job_title AS job_title, skill_counts::skill AS skill, (skill_counts::skill_count * 100.0 / total_jobs_by_title::total_jobs) AS skill_percentage;
 
--- Unir filtered_skills con total_skills para calcular el porcentaje
-joined_skills = JOIN filtered_skills BY job_title_lower, total_skills BY job_title_query;
+-- Ordenar habilidades por porcentaje en orden descendente
+ordered_percentage_skills = ORDER percentage_skills BY skill_percentage DESC;
 
--- Calcular el porcentaje de cada skill
-skill_percentages = FOREACH joined_skills GENERATE filtered_skills::job_title_lower AS job_title_lower, 
-                                                   filtered_skills::skill_trimmed AS skill_trimmed, 
-                                                   (filtered_skills::skill_count / total_skills::total_skill_count) * 100.0 AS skill_percentage;
-
-ordered_percentages = ORDER skill_percentages BY skill_percentage DESC;
-
--- Hacer un head de las 10 primeras habilidades más frecuentes
-head_filtered_skills = LIMIT ordered_percentages 10;
-
--- Mostrar las 10 habilidades más frecuentes
-DUMP head_filtered_skills;
+STORE ordered_percentage_skills INTO '/uhadoop2024/projects/skills/sorted_skills';
