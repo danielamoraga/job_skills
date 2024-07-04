@@ -36,7 +36,7 @@ joined_data = JOIN skills_filtered BY url, selected BY url;
 job_title_skills = FOREACH joined_data GENERATE selected::job_title_lower, skills_filtered::skill_trimmed;
 
 -- Contar el número total de trabajos por título de trabajo
-total_jobs_by_title = FOREACH (GROUP job_title_skills BY job_title) GENERATE group AS job_title, COUNT(job_title_skills) AS total_jobs;
+total_jobs_by_title = FOREACH (GROUP job_title_skills BY job_title_lower) GENERATE group AS job_title, COUNT(job_title_skills) AS total_jobs;
 
 -- Agrupar por job_title y skill para contar la frecuencia de cada habilidad
 grouped_by_title_skill = GROUP job_title_skills BY job_title_lower;
@@ -57,7 +57,7 @@ order_skill_counts = ORDER skill_counts by skill_count DESC;
 joined_totals = JOIN skill_counts BY job_title_lower, total_jobs_by_title BY job_title_lower;
 
 -- Calcular el porcentaje de trabajos que requieren cada habilidad
-percentage_skills = FOREACH joined_totals GENERATE skill_counts::job_title_lower AS job_title_lower, skill_counts::skill AS skill, (skill_counts::skill_count * 100.0 / total_jobs_by_title::total_jobs) AS skill_percentage;
+percentage_skills = FOREACH joined_totals GENERATE skill_counts::job_title_lower AS job_title_lower, skill_counts::skill_trimmed AS skill, (skill_counts::skill_count * 100.0 / total_jobs_by_title::total_jobs) AS skill_percentage;
 
 -- Ordenar habilidades por porcentaje en orden descendente
 ordered_percentage_skills = ORDER percentage_skills BY skill_percentage DESC;
